@@ -1,7 +1,5 @@
-build:
-	docker build -t gary/ml_ops_data_engineer_hw:0.0.1 .
-
 run:
+	docker build -t gary/ml_ops_data_engineer_hw:0.0.1 .
 	docker run --rm -d -p 8080:8080 -v ./dags/:/opt/airflow/dags/ -v ./data/:/opt/airflow/data/ --name="gary_ml_ops_data_engineer_hw" gary/ml_ops_data_engineer_hw:0.0.1
 
 stop:

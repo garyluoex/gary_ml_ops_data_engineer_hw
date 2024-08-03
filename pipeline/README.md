@@ -129,3 +129,14 @@ Time Consolication Strategy
 1. merge multiple records together base on what is missing
 2. fill records with previously known value 
 3. reduce time granularity and take median value group
+
+
+
+Improvements
+
+
+TODO:
+1. Features pipeline
+2. Enforce types
+3. Handle errors and exceptions
+3. Implement constraints
