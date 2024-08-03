@@ -1,5 +1,16 @@
 # Gary Data Engineer Homework
 
+
+# Data
+1. 4 distinct runs 
+    7582293080991470000 load cell + encoder
+    6176976534744076000 load cell + encoder
+    12405186538561671000 load cell only
+    8910095844186657000  encoder only
+
+
+
+
 # Notes
 1. is the video fast forwarded? can be answered by the data I think
 2. run__uuid any operation on the same part gurantee to have same uuid? system restart?
@@ -10,7 +21,9 @@
 7. what are the potential errors that you guys commonly see so I can incorporate into the pipeline.
 8. ask for github handles to share repository with also download zip
 9. docker + airflow
-
+10. There is no ramping up the force, gradually from 0 to max force?
+11. Include error reason and pass the reason down through the pipeline
+12. Total distance traveled will not be accurat since data is discrete
 
 2.1 Preprocess and Clean
 1. Read parquet
@@ -76,6 +89,7 @@ Try to follow ETL best practices for your example code. Good habits that we like
 Assumptions
 1. Note that this is not a production setup, main use case is to demonstrate the features and functionality of what a production system could loook like. Contains configuration and setup that are not best practices in production.
 2. Tried to keep things simple
+3. Although this is not producation ready, the technolgoies used are overkill for the homework assignment on purpose to demonstrate what are scaled up version of the pipeline should look like
 
 
 Requirement
@@ -91,3 +105,27 @@ Commands
 3. docker ps -a
 4. source .venv/bin/activate
 5. 
+
+
+
+Queries
+1. select * from data where run_uuid = '7582293080991470000' and sensor_type = 'encoder' and field = 'y' and robot_id=1 order by time asc
+
+1.1 1. select * from data where run_uuid = '6176976534744076000' and sensor_type = 'encoder' and field = 'x' and robot_id=1 order by time asc
+
+2. select run_uuid, robot_id, field, sensor_type, max(value), min(value) from data group by field, robot_id, run_uuid, sensor_type order by run_uuid, robot_id, sensor_type, field
+
+3. SELECT * FROM data where run_uuid='7582293080991470000' order by time asc 
+
+
+
+Decisions
+1. why not store in a database? why store in file or aws s3? Why use deltalake?
+2. why use airflow? why not use dbt and snowflake? or databricks?
+3. 
+
+
+Time Consolication Strategy
+1. merge multiple records together base on what is missing
+2. fill records with previously known value 
+3. reduce time granularity and take median value group

@@ -6,7 +6,7 @@ RUN pip install --no-cache-dir -r /opt/airflow/requirements.txt
 
 # copy pipeline and data files
 # COPY dags/ /opt/airflow/dags/
-COPY data/ /opt/airflow/data/
+# COPY data/ /opt/airflow/data/
 
 # initialize and start airflow
 COPY scripts/entrypoint.sh /opt/airflow/scripts/entrypoint.sh
