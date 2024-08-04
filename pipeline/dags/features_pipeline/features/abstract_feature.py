@@ -19,7 +19,7 @@ class Feature(ABC):
         pass
 
     @abstractmethod
-    def compute_feature(self) -> DataFrame:
+    def compute_feature(self) -> Series:
         pass
 
     @abstractmethod

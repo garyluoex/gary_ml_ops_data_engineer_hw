@@ -11,11 +11,22 @@ def generate_feature(delta_path: str, feature: Feature):
     dependent_columns = feature.get_dependent_columns()
 
     dt = DeltaTable(delta_path)
-    df = dt.to_pandas(columns=["run_uuid", "timestamp"] + dependent_columns)
+    df = dt.to_pandas(
+        columns=["run_uuid", "timestamp"]
+        + [
+            column
+            for column in dependent_columns
+            if column
+            not in [
+                feature.get_feature_name()
+                for feature in feature.get_dependent_features()
+            ]
+        ]
+    )
 
     for dependent_feature in dependent_features:
         feature_dt = DeltaTable(dependent_feature.get_feature_delta_table_path())
-        dependent_feature_df = feature_dt.to_pandas(columns=dependent_columns)
+        dependent_feature_df = feature_dt.to_pandas()
         df = df.merge(dependent_feature_df, on=["run_uuid", "timestamp"], how="left")
 
     df[feature_name] = feature.compute_feature(df)
