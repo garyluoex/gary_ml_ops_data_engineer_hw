@@ -9,8 +9,6 @@
     8910095844186657000  encoder only
 
 
-
-
 # Notes
 1. is the video fast forwarded? can be answered by the data I think
 2. run__uuid any operation on the same part gurantee to have same uuid? system restart?
@@ -144,3 +142,11 @@ TODO:
 5. trigger by execution time
 6. check if there is memory efficient way to not create a new df everytime
 7. read airflow best practices
+
+
+
+source_sensor_data
+/delivery_timestamp
+
+clean_and_reshape
+/run_uuid

@@ -13,10 +13,10 @@ with DAG(
         dt = DeltaTable(delta_path)
         df = dt.to_pandas()
 
-        df = df.groupby(["run_uuid"]).agg({"timestamp": ["max", "min"]})
+        df = df.groupby(["run_uuid"]).agg({"time_stamp": ["max", "min"]})
 
         write_deltalake(
-            "data/pipeline_artifacts/run_statistics",
+            "data/pipeline_artifacts/summary_pipeline/run_statistics",
             df,
             mode="overwrite",
             schema_mode="overwrite",

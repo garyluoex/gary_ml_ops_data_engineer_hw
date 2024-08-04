@@ -5,10 +5,17 @@ from deltalake import DeltaTable, Field, Schema, write_deltalake
 from deltalake.exceptions import TableNotFoundError
 
 
+# Assume sensor data will be delivered and parititioned by delivery datetime, old data could be delivered at a later date
+# assume every record is delivered only once
+# Assume the start of a batch is delivered first
+# This task process latest sensor data by time interval and append data to delta table
+# In the case of backfill, this task will overwrite using predicate where run__uuid and
 @task(task_id="read_sensor_data_parquet")
 def clean_and_reshape(parquet_file_path: str):
     # read input data
-    df = pd.read_parquet(parquet_file_path)
+    df = pd.read_parquet(
+        parquet_file_path
+    )  # in production this will read only data within the execution interval
 
     # pivot field and robot_id values into column
     df = df.pivot(
@@ -53,5 +60,5 @@ def clean_and_reshape(parquet_file_path: str):
     write_deltalake(
         "data/pipeline_artifacts/cleaning_pipeline/clean_and_reshape",
         df,
-        mode="overwrite",  # should be 'append' in production and use 'overwrite' if current run is backfill
+        mode="overwrite",  # should be 'append' in production and no backfill allowed
     )
