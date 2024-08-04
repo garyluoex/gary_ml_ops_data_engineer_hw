@@ -25,5 +25,5 @@ with DAG(
         return "Computing features"
 
     calculate_runtime_statistics_task = calculate_runtime_statistics(
-        "data/pipeline_artifacts/data_with_features"
+        "data/pipeline_artifacts/features_pipeline/combined_features"
     )

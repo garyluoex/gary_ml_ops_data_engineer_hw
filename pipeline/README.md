@@ -129,6 +129,7 @@ Time Consolication Strategy
 1. merge multiple records together base on what is missing
 2. fill records with previously known value 
 3. reduce time granularity and take median value group
+4 could also consider dropping these rows with no interpolation, but would lose data vs. slightly more inaccurate data than interpolated data
 
 
 
@@ -136,8 +137,10 @@ Improvements
 
 
 TODO:
-1. Features pipeline
 2. Enforce types
-3. Handle errors and exceptions
+3. Handle errors and exceptions with error columns
 3. Implement constraints
 4. Need to validate the result of feature generated and is distinct matches shape
+5. trigger by execution time
+6. check if there is memory efficient way to not create a new df everytime
+7. read airflow best practices

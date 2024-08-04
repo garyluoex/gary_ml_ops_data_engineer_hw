@@ -1,6 +1,6 @@
 from airflow.models.dag import DAG
-from cleaning_pipeline.tasks.read_sensor_data import (
-    read_sensor_data_parquet,
+from cleaning_pipeline.tasks.clean_and_reshape import (
+    clean_and_reshape,
 )
 from cleaning_pipeline.tasks.interpolate_sensor_data import interpolate_sensor_data
 
@@ -9,10 +9,10 @@ with DAG(
     description="Clean, format and interpolate sensor data.",
 ) as dag:
 
-    read_sample_sensor_data = read_sensor_data_parquet("data/sample.parquet")
+    clean_and_reshape_task = clean_and_reshape("data/sample.parquet")
 
-    interpolate_data = interpolate_sensor_data(
-        "data/pipeline_artifacts/read_sensor_data"
+    interpolate_task = interpolate_sensor_data(
+        "data/pipeline_artifacts/cleaning_pipeline/clean_and_reshape"
     )
 
-    read_sample_sensor_data >> interpolate_data
+    clean_and_reshape_task >> interpolate_task
