@@ -140,3 +140,4 @@ TODO:
 2. Enforce types
 3. Handle errors and exceptions
 3. Implement constraints
+4. Need to validate the result of feature generated and is distinct matches shape
