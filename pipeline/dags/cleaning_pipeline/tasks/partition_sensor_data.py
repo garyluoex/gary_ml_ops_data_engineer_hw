@@ -1,3 +1,4 @@
+from decimal import Decimal
 from airflow.decorators import task
 
 import pandas as pd
@@ -30,11 +31,11 @@ def partition_sensor_data(**kwargs):
 
     # convert from double to string and avoid being interpreted as scientific notation
     input_sensor_data_df["run_uuid"] = input_sensor_data_df["run_uuid"].apply(
-        "{:.0f}".format
+        lambda val: "{:f}".format(Decimal(str(val)))
     )
 
     write_deltalake(
-        "data/pipeline_artifacts/cleaning_pipeline/partition_sensor_data_by_run_uuid",
+        "data/pipeline_artifacts/cleaning_pipeline/partition_sensor_data",
         input_sensor_data_df,
         schema=_get_partition_sensor_data_output_schema(),
         mode="append",

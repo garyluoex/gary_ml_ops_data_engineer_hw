@@ -22,7 +22,7 @@ def clean_and_reshape(**kwargs):
     )
 
     partitioned_sensor_data_dt = DeltaTable(
-        "data/pipeline_artifacts/cleaning_pipeline/partition_sensor_data_by_run_uuid"
+        "data/pipeline_artifacts/cleaning_pipeline/partition_sensor_data"
     )
     for run_uuid in updated_run_uuids:
         run_df = partitioned_sensor_data_dt.to_pandas(

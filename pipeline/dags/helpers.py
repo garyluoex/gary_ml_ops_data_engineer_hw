@@ -10,7 +10,7 @@ def get_updated_run_uuids_in_data_interval(
     end_date: datetime,
 ) -> List[str]:
     partitioned_sensor_data_dt = DeltaTable(
-        "data/pipeline_artifacts/cleaning_pipeline/partition_sensor_data_by_run_uuid"
+        "data/pipeline_artifacts/cleaning_pipeline/partition_sensor_data"
     )
     run_uuid_df = partitioned_sensor_data_dt.to_pandas(
         columns=["run_uuid"],
