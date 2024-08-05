@@ -1,11 +1,9 @@
-import datetime
 from typing import List
 from airflow.decorators import task
 import numpy as np
 import pandas as pd
 
 from deltalake import DeltaTable, Field, Schema, write_deltalake
-from deltalake.exceptions import TableNotFoundError
 
 from helpers import get_updated_run_uuids_in_data_interval
 
@@ -23,11 +21,11 @@ def clean_and_reshape(**kwargs):
         kwargs["dag_run"].data_interval_start, kwargs["dag_run"].data_interval_end
     )
 
-    paritioned_sensor_data_dt = DeltaTable(
-        "data/pipeline_artifacts/partition_pipeline/parition_sensor_data_by_run_uuid"
+    partitioned_sensor_data_dt = DeltaTable(
+        "data/pipeline_artifacts/cleaning_pipeline/partition_sensor_data_by_run_uuid"
     )
     for run_uuid in updated_run_uuids:
-        run_df = paritioned_sensor_data_dt.to_pandas(
+        run_df = partitioned_sensor_data_dt.to_pandas(
             partitions=[
                 ("run_uuid", "=", run_uuid),
             ]

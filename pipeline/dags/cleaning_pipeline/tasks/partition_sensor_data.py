@@ -5,8 +5,8 @@ import pandas as pd
 from deltalake import Field, Schema, write_deltalake
 
 
-@task(task_id="parition_sensor_data")
-def parition_sensor_data(**kwargs):
+@task(task_id="partition_sensor_data")
+def partition_sensor_data(**kwargs):
     input_sensor_data_df = pd.read_parquet(
         "data/source_sensor_data/",
         filters=[
@@ -34,7 +34,7 @@ def parition_sensor_data(**kwargs):
     )
 
     write_deltalake(
-        "data/pipeline_artifacts/partition_pipeline/parition_sensor_data_by_run_uuid",
+        "data/pipeline_artifacts/cleaning_pipeline/partition_sensor_data_by_run_uuid",
         input_sensor_data_df,
         schema=_get_partition_sensor_data_output_schema(),
         mode="append",
