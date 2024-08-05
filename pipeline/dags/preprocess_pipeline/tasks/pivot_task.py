@@ -2,27 +2,52 @@ from typing import List
 from airflow.decorators import task
 import numpy as np
 import pandas as pd
-
+from pandas import DataFrame
 from deltalake import DeltaTable, Field, Schema, write_deltalake
 
 from helpers import get_updated_run_uuids_in_data_interval
 
 
-# Assume sensor data will be delivered and parititioned by delivery datetime, old data could be delivered at a later date
-# assume every record is delivered only once
-# Assume the start of a batch is delivered first
-# This task process latest sensor data by time interval and append data to delta table
-# In the case of backfill, this task will overwrite using predicate where run__uuid and
-@task(task_id="clean_and_reshape")
-def clean_and_reshape(**kwargs):
-    outputSchema = _get_clean_and_reshape_output_schema()
+def _get_pivot_task_output_schema():
+    return Schema(
+        [
+            Field("run_uuid", "string"),
+            Field("time", "string"),
+            Field("x_1", "double"),
+            Field("y_1", "double"),
+            Field("z_1", "double"),
+            Field("x_2", "double"),
+            Field("y_2", "double"),
+            Field("z_2", "double"),
+            Field("fx_1", "double"),
+            Field("fy_1", "double"),
+            Field("fz_1", "double"),
+            Field("fx_2", "double"),
+            Field("fy_2", "double"),
+            Field("fz_2", "double"),
+        ]
+    )
+
+
+@task(task_id="pivot_task")
+def pivot_task(**kwargs):
+    """
+    Description: Pivots `field`` and `robot_id` values into column wide format.
+
+    Input: Partitioned data filtered to only runs that have been updated within the dag run data interval.
+
+    Output: Pivoted data paritioned by 'run_uuid'.
+
+    Reprocessing: Reprocess will overwrite old run data with newly reprocessed run data.
+    """
+    outputSchema = _get_pivot_task_output_schema()
 
     updated_run_uuids = get_updated_run_uuids_in_data_interval(
         kwargs["dag_run"].data_interval_start, kwargs["dag_run"].data_interval_end
     )
 
     partitioned_sensor_data_dt = DeltaTable(
-        "data/pipeline_artifacts/cleaning_pipeline/partition_sensor_data"
+        "data/pipeline_artifacts/preprocess_pipeline/paritioned_data"
     )
     for run_uuid in updated_run_uuids:
         run_df = partitioned_sensor_data_dt.to_pandas(
@@ -44,7 +69,7 @@ def clean_and_reshape(**kwargs):
 
         # write output data to delta table
         write_deltalake(
-            "data/pipeline_artifacts/cleaning_pipeline/clean_and_reshape",
+            "data/pipeline_artifacts/preprocess_pipeline/pivoted_data",
             complete_df,
             schema=outputSchema,
             mode="overwrite",
@@ -54,8 +79,8 @@ def clean_and_reshape(**kwargs):
 
 
 def _pivot_and_rename_columns(
-    df: pd.DataFrame, index: List[str], columns: List[str], value: str
-) -> pd.DataFrame:
+    df: DataFrame, index: List[str], columns: List[str], value: str
+) -> DataFrame:
     pivot_df = df.pivot(index=index, columns=columns, values=value)
     pivot_df.columns = [
         "_".join((field, str(robot_id))) for field, robot_id in pivot_df.columns
@@ -64,7 +89,7 @@ def _pivot_and_rename_columns(
     return pivot_df
 
 
-def _insert_missing_columns(df: pd.DataFrame, outputSchema: Schema) -> pd.DataFrame:
+def _insert_missing_columns(df: pd.DataFrame, outputSchema: Schema) -> DataFrame:
     table_column_names = [
         field.name
         for field in outputSchema.fields
@@ -76,24 +101,3 @@ def _insert_missing_columns(df: pd.DataFrame, outputSchema: Schema) -> pd.DataFr
     ]:
         df[missing_col_name] = np.nan
     return df
-
-
-def _get_clean_and_reshape_output_schema():
-    return Schema(
-        [
-            Field("run_uuid", "string"),
-            Field("time", "string"),
-            Field("x_1", "double"),
-            Field("y_1", "double"),
-            Field("z_1", "double"),
-            Field("x_2", "double"),
-            Field("y_2", "double"),
-            Field("z_2", "double"),
-            Field("fx_1", "double"),
-            Field("fy_1", "double"),
-            Field("fz_1", "double"),
-            Field("fx_2", "double"),
-            Field("fy_2", "double"),
-            Field("fz_2", "double"),
-        ]
-    )

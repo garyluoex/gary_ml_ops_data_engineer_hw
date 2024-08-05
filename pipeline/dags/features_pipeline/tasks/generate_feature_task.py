@@ -3,16 +3,32 @@ from airflow.decorators import task
 from deltalake import DeltaTable, Field, Schema, write_deltalake
 from pandas import DataFrame
 
-from features_pipeline.features.abstract_feature import Feature
+from features_pipeline.feature_builders.abstract_feature import Feature
 
 from helpers import get_updated_run_uuids_in_data_interval
 
 
-# one caveat of this approach with run_uuid is that it could get reprocessed multiple times when backfilling
-# This task generates a feature from the given feature
-@task(task_id="generate_feature")
-def generate_feature(feature: Feature, features_map: Dict[str, Feature], **kwargs):
+def _get_generate_feature_task_output_schema(feature: Feature) -> Schema:
+    return Schema(
+        [
+            Field("run_uuid", "string"),
+            Field("time_stamp", "long"),
+            Field(feature.get_feature_column_name(), feature.get_feature_column_type()),
+        ]
+    )
 
+
+@task(task_id="generate_feature_task")
+def generate_feature_task(feature: Feature, features_map: Dict[str, Feature], **kwargs):
+    """
+    Description: Generates a feature column for each run that is updated within the dag run data interval.
+
+    Input: Updated run_uuids with new record ingested within the dag run data interval and interpolated data filtered to only the updated runs.
+
+    Output: The feature column for updated runs along with the run_uuid and time_stamp.
+
+    Reprocessing: Reprocess will overwrite old run_uuid's feature with newly reprocessed feature for the same run_uuid.
+    """
     updated_run_uuids = get_updated_run_uuids_in_data_interval(
         kwargs["dag_run"].data_interval_start, kwargs["dag_run"].data_interval_end
     )
@@ -22,7 +38,7 @@ def generate_feature(feature: Feature, features_map: Dict[str, Feature], **kwarg
     dependent_columns = feature.get_dependent_columns()
     for run_uuid in updated_run_uuids:
         input_interpolated_dt = DeltaTable(
-            "data/pipeline_artifacts/cleaning_pipeline/interpolate_sensor_data"
+            "data/pipeline_artifacts/preprocess_pipeline/interpolated_data"
         )
 
         # get inteporlated data for the run_uuid
@@ -51,7 +67,7 @@ def generate_feature(feature: Feature, features_map: Dict[str, Feature], **kwarg
             feature.get_feature_delta_table_path(),
             merged_features_df,
             mode="overwrite",
-            schema=_get_generate_feature_output_schema(feature),
+            schema=_get_generate_feature_task_output_schema(feature),
             partition_by=["run_uuid"],
             partition_filters=[("run_uuid", "=", run_uuid)],
         )
@@ -74,13 +90,3 @@ def _append_columns_from_dependent_features(
         )
         df = df.merge(dependent_feature_df, on=["run_uuid", "time_stamp"], how="left")
     return df
-
-
-def _get_generate_feature_output_schema(feature: Feature) -> Schema:
-    return Schema(
-        [
-            Field("run_uuid", "string"),
-            Field("time_stamp", "long"),
-            Field(feature.get_feature_column_name(), feature.get_feature_column_type()),
-        ]
-    )

@@ -1,10 +1,10 @@
 from typing import List
 
 from pandas import DataFrame, Series
-from features_pipeline.features.abstract_feature import Feature
+from features_pipeline.feature_builders.abstract_feature import Feature
 
 
-class AxisDifferentiationByTime(Feature):
+class AxisDifferentiation(Feature):
     def __init__(self, feature_name: str, axis_column: str):
         self.feature_name = feature_name
         self.axis_column = axis_column
@@ -20,9 +20,7 @@ class AxisDifferentiationByTime(Feature):
 
     def compute_feature(self, df: DataFrame) -> DataFrame:
         df.sort_values(by="time_stamp", ascending=True, inplace=True)
-        df[self.feature_name] = (
-            df[self.axis_column].diff() / df["time_stamp"].diff() * 1000000
-        )
+        df[self.feature_name] = df[self.axis_column].diff()
         return df
 
     def get_feature_constraints(self):

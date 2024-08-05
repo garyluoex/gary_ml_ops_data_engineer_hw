@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 from pandas import DataFrame, Series
-from features_pipeline.features.abstract_feature import Feature
+from features_pipeline.feature_builders.abstract_feature import Feature
 
 
 class EuclideanNorm(Feature):
