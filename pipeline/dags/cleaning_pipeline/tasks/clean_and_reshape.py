@@ -1,10 +1,13 @@
 import datetime
+from typing import List
 from airflow.decorators import task
 import numpy as np
 import pandas as pd
 
 from deltalake import DeltaTable, Field, Schema, write_deltalake
 from deltalake.exceptions import TableNotFoundError
+
+from helpers import get_updated_run_uuids_in_data_interval
 
 
 # Assume sensor data will be delivered and parititioned by delivery datetime, old data could be delivered at a later date
@@ -14,8 +17,71 @@ from deltalake.exceptions import TableNotFoundError
 # In the case of backfill, this task will overwrite using predicate where run__uuid and
 @task(task_id="clean_and_reshape")
 def clean_and_reshape(**kwargs):
-    # create output delta table if not already exists
-    schema = Schema(
+    outputSchema = _get_clean_and_reshape_output_schema()
+
+    updated_run_uuids = get_updated_run_uuids_in_data_interval(
+        kwargs["dag_run"].data_interval_start, kwargs["dag_run"].data_interval_end
+    )
+
+    paritioned_sensor_data_dt = DeltaTable(
+        "data/pipeline_artifacts/partition_pipeline/parition_sensor_data_by_run_uuid"
+    )
+    for run_uuid in updated_run_uuids:
+        run_df = paritioned_sensor_data_dt.to_pandas(
+            partitions=[
+                ("run_uuid", "=", run_uuid),
+            ]
+        )
+
+        # pivot 'field' and 'robot_id' values into columns
+        pivoted_df = _pivot_and_rename_columns(
+            run_df,
+            index=["time", "run_uuid"],
+            columns=["field", "robot_id"],
+            value="value",
+        )
+
+        # if any missing columns, fill with null
+        complete_df = _insert_missing_columns(pivoted_df, outputSchema)
+
+        # write output data to delta table
+        write_deltalake(
+            "data/pipeline_artifacts/cleaning_pipeline/clean_and_reshape",
+            complete_df,
+            schema=outputSchema,
+            mode="overwrite",
+            partition_by=["run_uuid"],
+            partition_filters=[("run_uuid", "=", run_uuid)],
+        )
+
+
+def _pivot_and_rename_columns(
+    df: pd.DataFrame, index: List[str], columns: List[str], value: str
+) -> pd.DataFrame:
+    pivot_df = df.pivot(index=index, columns=columns, values=value)
+    pivot_df.columns = [
+        "_".join((field, str(robot_id))) for field, robot_id in pivot_df.columns
+    ]
+    pivot_df.reset_index(inplace=True)
+    return pivot_df
+
+
+def _insert_missing_columns(df: pd.DataFrame, outputSchema: Schema) -> pd.DataFrame:
+    table_column_names = [
+        field.name
+        for field in outputSchema.fields
+        if field.name not in ["run_uuid", "time"]
+    ]
+    data_column_names = df.columns
+    for missing_col_name in [
+        col for col in table_column_names if col not in data_column_names
+    ]:
+        df[missing_col_name] = np.nan
+    return df
+
+
+def _get_clean_and_reshape_output_schema():
+    return Schema(
         [
             Field("run_uuid", "string"),
             Field("time", "string"),
@@ -33,65 +99,3 @@ def clean_and_reshape(**kwargs):
             Field("fz_2", "double"),
         ]
     )
-    try:
-        DeltaTable("data/pipeline_artifacts/cleaning_pipeline/clean_and_reshape")
-    except TableNotFoundError:
-        DeltaTable.create(
-            "data/pipeline_artifacts/cleaning_pipeline/clean_and_reshape",
-            schema=schema,
-            mode="error",
-            partition_by=["run_uuid"],
-        )
-
-    data_interval_start = kwargs["dag_run"].data_interval_start
-    data_interval_end = kwargs["dag_run"].data_interval_end
-
-    assert data_interval_end - data_interval_start == datetime.timedelta(
-        days=1
-    ), "This task is desinged to process data one day at a time."
-
-    # read input data
-    input_dt = DeltaTable(
-        "data/pipeline_artifacts/partition_pipeline/parition_sensor_data_by_run_uuid"
-    )
-    run_uuid_df = input_dt.to_pandas(
-        columns=["run_uuid"],
-        partitions=[("delivery_date", "=", data_interval_start.strftime("%Y%m%d"))],
-    )
-    distinct_run_uuids = run_uuid_df["run_uuid"].unique().tolist()
-
-    for run_uuid in distinct_run_uuids:
-        run_df = input_dt.to_pandas(
-            partitions=[
-                ("run_uuid", "=", run_uuid),
-            ]
-        )
-
-        # pivot field and robot_id values into column
-        run_df = run_df.pivot(
-            index=["time", "run_uuid"], columns=["field", "robot_id"], values="value"
-        )
-        run_df.columns = [
-            "_".join((field, str(robot_id))) for field, robot_id in run_df.columns
-        ]
-        run_df = run_df.reset_index()
-
-        # if any missing columns, fill with null
-        table_column_names = [
-            field.name
-            for field in schema.fields
-            if field.name not in ["run_uuid", "time"]
-        ]
-        data_column_names = run_df.columns
-        for missing_col_name in [
-            col for col in table_column_names if col not in data_column_names
-        ]:
-            run_df[missing_col_name] = np.nan
-
-        # write output data to delta table
-        write_deltalake(
-            "data/pipeline_artifacts/cleaning_pipeline/clean_and_reshape",
-            run_df,
-            mode="overwrite",
-            partition_filters=[("run_uuid", "=", run_uuid)],
-        )

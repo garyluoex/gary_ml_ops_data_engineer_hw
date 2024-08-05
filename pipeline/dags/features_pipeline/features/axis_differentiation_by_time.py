@@ -21,6 +21,7 @@ class AxisDifferentiationByTime(Feature):
     def compute_feature(
         self, df: DataFrame
     ) -> Series:  # Do I need ot sort this by timestamp first?
+        print(df.info())
         return df[self.axis_column].diff() / df["time_stamp"].diff() / 1000000
 
     def get_feature_description(self):
