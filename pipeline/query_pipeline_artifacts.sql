@@ -1,20 +1,20 @@
 create table sensor_data as
-select * from read_parquet('source_sensor_data/*/*.parquet');
+select * from read_parquet('data/source_sensor_data/*/*.parquet');
 
 create table partitioned_sensor_data as
-select * from read_parquet('pipeline_artifacts/cleaning_pipeline/partition_sensor_data/*/*/*.parquet');
+select * from read_parquet('data/pipeline_artifacts/cleaning_pipeline/partition_sensor_data/*/*/*.parquet');
 
 create table pivoted_sensor_data as
-select * from read_parquet('pipeline_artifacts/cleaning_pipeline/clean_and_reshape/*/*.parquet');
+select * from read_parquet('data/pipeline_artifacts/cleaning_pipeline/clean_and_reshape/*/*.parquet');
 
 create table interpolate_sensor_data as
-select * from read_parquet('pipeline_artifacts/cleaning_pipeline/interpolate_sensor_data/*/*.parquet');
+select * from read_parquet('data/pipeline_artifacts/cleaning_pipeline/interpolate_sensor_data/*/*.parquet');
 
 create table combined_sensor_data as
-select * from read_parquet('pipeline_artifacts/features_pipeline/combined_features/*/*.parquet');
+select * from read_parquet('data/pipeline_artifacts/features_pipeline/combined_features/*/*.parquet');
 
 create table run_statistics as
-select * from read_parquet('pipeline_artifacts/summary_pipeline/run_statistics/*.parquet');
+select * from read_parquet('data/pipeline_artifacts/summary_pipeline/run_statistics/*.parquet');
 
 
 SUMMARIZE sensor_data;
