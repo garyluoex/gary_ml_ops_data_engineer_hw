@@ -18,16 +18,10 @@ class AxisDifferentiation(Feature):
     def get_feature_column_type(self) -> str:
         return "double"
 
-    def compute_feature(
-        self, df: DataFrame
-    ) -> Series:  # Do I need ot sort this by timestamp first?
-        return df[self.axis_column].diff()
-
-    def get_feature_description(self):
-        return """
-        Calcuates the differentiation of a column in respect to time along a single axis.
-        If position is given this computes velocity and if velocity is given this computes acceleration.      
-        """
+    def compute_feature(self, df: DataFrame) -> DataFrame:
+        df.sort_values(by="time_stamp", ascending=True, inplace=True)
+        df[self.feature_name] = df[self.axis_column].diff()
+        return df
 
     def get_feature_constraints(self):
         return [

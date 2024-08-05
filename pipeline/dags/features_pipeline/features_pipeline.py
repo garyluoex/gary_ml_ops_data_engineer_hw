@@ -3,6 +3,7 @@ from typing import List
 from airflow.models.dag import DAG
 from airflow.decorators import task
 
+from features_pipeline.features.axis_differentiation import AxisDifferentiation
 from features_pipeline.features.abstract_feature import Feature
 from features_pipeline.features.euclidean_norm import EuclideanNorm
 from features_pipeline.tasks.generate_feature import generate_feature
@@ -44,12 +45,12 @@ with DAG(
         EuclideanNorm("a2", ["ax_2", "ay_2", "az_2"]),
         EuclideanNorm("f1", ["fx_1", "fy_1", "fz_1"]),
         EuclideanNorm("f2", ["fx_2", "fy_2", "fz_2"]),
-        AxisDifferentiationByTime("dx_1", "x_1"),
-        AxisDifferentiationByTime("dy_1", "y_1"),
-        AxisDifferentiationByTime("dz_1", "z_1"),
-        AxisDifferentiationByTime("dx_2", "x_2"),
-        AxisDifferentiationByTime("dy_2", "y_2"),
-        AxisDifferentiationByTime("dz_2", "z_2"),
+        AxisDifferentiation("dx_1", "x_1"),
+        AxisDifferentiation("dy_1", "y_1"),
+        AxisDifferentiation("dz_1", "z_1"),
+        AxisDifferentiation("dx_2", "x_2"),
+        AxisDifferentiation("dy_2", "y_2"),
+        AxisDifferentiation("dz_2", "z_2"),
         EuclideanNorm("d1", ["dx_1", "dy_1", "dz_1"]),
         EuclideanNorm("d2", ["dx_2", "dy_2", "dz_2"]),
     ]

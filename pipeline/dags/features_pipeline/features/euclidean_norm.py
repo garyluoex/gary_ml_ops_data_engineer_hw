@@ -22,13 +22,8 @@ class EuclideanNorm(Feature):
     def compute_feature(
         self, df: DataFrame
     ) -> Series:  # Do I need ot sort this by timestamp first?
-        return np.linalg.norm(df[self.axis_columns].values, axis=1)
-
-    def get_feature_description(self):
-        return """
-        Calcuates the differentiation of a column in respect to time along a single axis.
-        If position is given this computes velocity and if velocity is given this computes acceleration.      
-        """
+        df[self.feature_name] = np.linalg.norm(df[self.axis_columns].values, axis=1)
+        return df
 
     def get_feature_constraints(self):
         return [

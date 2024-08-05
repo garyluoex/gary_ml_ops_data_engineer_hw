@@ -40,7 +40,7 @@ def generate_feature(feature: Feature, features_map: Dict[str, Feature], **kwarg
         )
 
         # generate the feature
-        merged_features_df[feature_name] = feature.compute_feature(merged_features_df)
+        merged_features_df = feature.compute_feature(merged_features_df)
 
         # take only the neccessary columns
         merged_features_df = merged_features_df[

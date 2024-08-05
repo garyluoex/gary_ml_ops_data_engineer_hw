@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from pandas import DataFrame, Series
+from pandas import DataFrame
 
 
 class Feature(ABC):
@@ -21,11 +21,7 @@ class Feature(ABC):
     @abstractmethod
     def compute_feature(
         self,
-    ) -> Series:  # TODO: make sure a completely empty column works also
-        pass
-
-    @abstractmethod
-    def get_feature_description(self):
+    ) -> DataFrame:  # TODO: make sure a completely empty column works also
         pass
 
     @abstractmethod
