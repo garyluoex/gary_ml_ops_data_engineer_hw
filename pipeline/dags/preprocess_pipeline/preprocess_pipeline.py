@@ -1,10 +1,10 @@
 import datetime
 from airflow.models.dag import DAG
-from dags.preprocess_pipeline.tasks.pivot_task import (
+from preprocess_pipeline.tasks.pivot_task import (
     pivot_task,
 )
-from dags.preprocess_pipeline.tasks.interpolate_task import interpolate_task
-from dags.preprocess_pipeline.tasks.partition_task import (
+from preprocess_pipeline.tasks.interpolate_task import interpolate_task
+from preprocess_pipeline.tasks.partition_task import (
     partition_task,
 )
 

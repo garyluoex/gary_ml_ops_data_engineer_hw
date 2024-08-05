@@ -47,7 +47,7 @@ def pivot_task(**kwargs):
     )
 
     partitioned_sensor_data_dt = DeltaTable(
-        "data/pipeline_artifacts/preprocess_pipeline/paritioned_data"
+        "data/pipeline_artifacts/preprocess_pipeline/partitioned_data"
     )
     for run_uuid in updated_run_uuids:
         run_df = partitioned_sensor_data_dt.to_pandas(

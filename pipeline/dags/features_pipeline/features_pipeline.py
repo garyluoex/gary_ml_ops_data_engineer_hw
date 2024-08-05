@@ -5,8 +5,8 @@ from airflow.models.dag import DAG
 from features_pipeline.feature_builders.axis_differentiation import AxisDifferentiation
 from features_pipeline.feature_builders.abstract_feature import Feature
 from features_pipeline.feature_builders.euclidean_norm import EuclideanNorm
-from dags.features_pipeline.tasks.generate_feature_task import generate_feature_task
-from dags.features_pipeline.tasks.combine_features_task import combine_features_task
+from features_pipeline.tasks.generate_feature_task import generate_feature_task
+from features_pipeline.tasks.combine_features_task import combine_features_task
 from features_pipeline.feature_builders.axis_differentiation_by_time import (
     AxisDifferentiationByTime,
 )

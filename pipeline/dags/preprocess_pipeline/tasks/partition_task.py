@@ -59,7 +59,7 @@ def partition_task(**kwargs):
     )
 
     write_deltalake(
-        "data/pipeline_artifacts/preprocess_pipeline/paritioned_data",
+        "data/pipeline_artifacts/preprocess_pipeline/partitioned_data",
         input_sensor_data_df,
         schema=_get_partition_task_output_schema(),
         mode="append",

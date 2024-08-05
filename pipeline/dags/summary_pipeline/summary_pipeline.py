@@ -31,7 +31,7 @@ with DAG(
                 Field("run_uuid", "string"),
                 Field("run_start_time", "string"),
                 Field("run_stop_time", "string"),
-                Field("total_runtime_ms", "double"),
+                Field("total_runtime", "double"),
                 Field("total_distance_traveled_1", "double"),
                 Field("total_distance_traveled_2", "double"),
             ]

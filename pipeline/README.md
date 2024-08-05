@@ -1,11 +1,14 @@
 # Gary Machina Labs Data Engineer Homework
 
+There are a lot more content I would love to write but simply don't have the time. Would love to discuss over chat sometime, in the meantime feel free to reach out if you have any questions. Enjoy!
+
 # Prerequisits
 1. MacOS or other systems capable of running Makefile
-1. Docker, tested with Docker Desktop 4.33.0 installed on MacBook Pro with 8GB memory reserved for Docker
+2. Git for cloning the repo
+3. Docker, tested with Docker Desktop 4.33.0 installed on MacBook Pro with 8GB memory reserved for Docker
 
 # Instructions
-1. Clone this github repo and switch to `solution` branch.
+1. Clone this github repo's `solution` branch.
 
  ```bash
  git clone -b solution git@github.com:garyluoex/gary_ml_ops_data_engineer_hw.git
@@ -17,34 +20,40 @@
 cd gary_ml_ops_data_engineer_hw/pipeline
 ```
 
-3. [Install Docker](https://docs.docker.com/engine/install/) if you haven't already, and make sure docker is currently running. 
+3. [Install Docker](https://docs.docker.com/engine/install/) if you haven't already, and make sure to open docker so that it is running. 
 
 4. Run the following command to build the Airflow docker image and start the Airflow container.
 ```bash
  make run
 ```
 
-4. Wait 15 seconds for the airflow webserver inside the container to start.
+4. Once build complete and container is running, wait 15 seconds for the airflow webserver inside the container to start.
 
 5. Login to Airflow UI at [http://localhost:8080](http://localhost:8080) using username: `admin`, password: `admin`.
 
 7. To start processing data, enable `preprocess_pipeline` DAG by turning on the toggle to the left of the name `preprocess_pipeline`
 
-8. Wait for `preprocess_pipeline` to complete indicated by a `1` inside a dark green circle in the `Runs` column and `preprocess_pipeline` row.
+8. Wait for `preprocess_pipeline` to complete indicated by a `1` inside a DARK green circle (light green means still running) in the `Runs` column and `preprocess_pipeline` row. You might have to refresh your browser a few times to see immediate update.
 
-9. Next lets generate features with `features_pipeline`, enable the `features_pipeline` DAG by turning on the toggle to the left of the name `features_pipeline`.
+9. Next lets generate features with `features_pipeline`, enable the `features_pipeline` DAG by turning on the toggle to the left of the name `features_pipeline`. The `features_pipeline` might take a minute to complete.
 
-8. Wait for `features_pipeline` to complete indicated by a `1` inside a dark green circle in the `Runs` column and `features_pipeline` row.
+8. Wait for `features_pipeline` to complete indicated by a `1` inside a dark green circle in the `Runs` column and `features_pipeline` row. You might have to refresh your browser a few times to see immediate update.
 
 9. Next lets compute run statistics with `summary_pipeline`, enable the `summary_pipeline` DAG by turning on the toggle to the left of the name `summary_pipeline`.
 
-12. Wait for `summary_pipeline` to complete processing.
+12. Wait for `summary_pipeline` to complete processing. You might have to refresh your browser a few times to see immediate update.
 
 13. Once all three pipeline completes, the generated data will be stored in the `data/pipeline_artifacts/` folder as [deltalake tables](https://delta-io.github.io/delta-rs/usage/installation/) (a table wrapper around parquet data).
 
 ```bash
+# Units
+# Position: mm
+# Velocity: mm/ms
+# Accerlation: mm/ms^2
+# Force: N
+
 # Intermediate Tables
-data/pipeline_artifacts/preprocess_pipeline/paritioned_data      # raw data paritioned for efficiency
+data/pipeline_artifacts/preprocess_pipeline/partitioned_data      # raw data paritioned for efficiency
 data/pipeline_artifacts/preprocess_pipeline/pivoted_data         # table pivoted into wide format
 data/pipeline_artifacts/preprocess_pipeline/interpolated_data    # table with sensor misalign gaps filled using interpolation
 
@@ -54,22 +63,25 @@ data/pipeline_artifacts/preprocess_pipeline/statistics_data      # table with st
 ```
 
 14. To query the deltalake tables shown above, I recommend installing [DuckDB CLI](https://duckdb.org/docs/installation)
-    1. Install DuckDB CLI
+    1. Install [DuckDB CLI](https://duckdb.org/docs/installation)
     2. Make sure you are still in the `pipeline` folder
-    4. Find `query_pipeline_artifacts.sql` file inside the `pipeline` folder
-    5. You can use the SQL command inside to create SQL tables from deltalake table
-    3. Start DuckDB CLI shell by using this command `duckdb`
-    6. Start querying the data!
+    3. Start DuckDB CLI shell by using this command `duckdb` or `./duckdb`  depending on if you installed via homebrew or download
+    4. Take a look at `query_pipeline_artifacts.sql` file on github [here](https://github.com/garyluoex/gary_ml_ops_data_engineer_hw/blob/solution/pipeline/query_pipeline_artifacts.sql)
+    5. You can use the SQL commands inside to create SQL tables from deltalake table
+    6. Run the SQL queries to create the deltalake tables and start querying the data using SQL!
 
-15. Alternatively you can query deltalake tables using pandas dataframe as well by
+15. Alternatively you can query deltalake tables using pandas dataframe by:
     1. SSH into the Airflow container using `make ssh`
     2. Start python shell `python`
-    3. Follow the instruction here to convert delta lake table to pandas https://delta-io.github.io/delta-rs/usage/querying-delta-tables/
+    3. Follow the instructions here to convert delta lake table to pandas https://delta-io.github.io/delta-rs/usage/querying-delta-tables/
+    4. Use the paths in above section like this 
+    ```python
+    df = DeltaTable('data/pipeline_artifacts/preprocess_pipeline/combined_data').to_pandas()
+    ```
 
 18. To stop the airflow container, use `make stop` command.
 
 17. To clean up artifacts, run `make clean` which will remove the docker image and remove data generated by the pipeline inside `data/pipeline_artifacts`.
-
 
 # Assumption
 1. Sensor data is streamed into storage and there is no gurantee when or in what order the sensor data from a run will be delivered.
@@ -80,8 +92,11 @@ data/pipeline_artifacts/preprocess_pipeline/statistics_data      # table with st
 2. And since there is no gurantee when a run is complete, we always process all the sensor data belonging to a run regardless of when the sensor data is ingested even if there is only one new sensor data record ingested.
 3. Each task is implemented with idempotentency in mind, so that reprocessing is supported and will not cause duplicate data.
 4. Most columns (except `run_uuid` and `time`) allow null values and it is up to the person implementing features to determine what the beahvior of the feature should be when its dependent column's value is null.
+5. Airflow provides powerful UI for interacting with pipeline runs making maintaining a pipeline structured and simple.
+6. Deltalake tables provides same scalaibility and query performance as parquet through skipping files and columns. But in addition adds covenient transaction like capability to write only a portion of the table.
 
 # Future Work
 1. When doing backfill/reprocessing, a run could get reprocessed multiple times unmecessarily since a run's records can belong to multiple data intervals.
 2. Currently the `feature_pipeline` will not wait for `preprocess_pipeline` to complete before proceeeding. This can be solved in production with concurrent processing support.
 3. Only manual testing and validation has been done, need to investigate [deltalake table constraint feature ](https://delta-io.github.io/delta-rs/usage/constraints/) and airflow unit test capability.
+4. The total distance metric in run statistics table currently shows `0` even when big parts of distance metric is null. Will need a better strategy to make it clear that it is invalid instead of `0`.
