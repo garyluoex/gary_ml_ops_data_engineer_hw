@@ -19,7 +19,9 @@ class Feature(ABC):
         pass
 
     @abstractmethod
-    def compute_feature(self) -> Series:
+    def compute_feature(
+        self,
+    ) -> Series:  # TODO: make sure a completely empty column works also
         pass
 
     @abstractmethod

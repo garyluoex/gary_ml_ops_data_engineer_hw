@@ -1,3 +1,4 @@
+import datetime
 from airflow.decorators import task
 from deltalake import DeltaTable, Field, Schema, write_deltalake
 import pandas as pd
@@ -5,9 +6,7 @@ from deltalake.exceptions import TableNotFoundError
 
 
 @task(task_id="interpolate_sensor_data")
-def interpolate_sensor_data(input_delta_table_path: str):
-    input_dt = DeltaTable(input_delta_table_path)
-
+def interpolate_sensor_data(**kwargs):
     # create output delta table if not already exists
     try:
         DeltaTable("data/pipeline_artifacts/cleaning_pipeline/interpolate_sensor_data")
@@ -38,29 +37,44 @@ def interpolate_sensor_data(input_delta_table_path: str):
             partition_by=["run_uuid"],
         )
 
-    # get all run_uuid values so that we can process each run_uuid separately
-    run_uuid_df = input_dt.to_pandas(columns=["run_uuid"])
+    data_interval_start = kwargs["dag_run"].data_interval_start
+    data_interval_end = kwargs["dag_run"].data_interval_end
+    assert data_interval_end - data_interval_start == datetime.timedelta(
+        days=1
+    ), "This pipeline is desinged to process data one day at a time."
+
+    # read input data
+    run_uuid_dt = DeltaTable(
+        "data/pipeline_artifacts/partition_pipeline/parition_sensor_data_by_run_uuid"
+    )
+    run_uuid_df = run_uuid_dt.to_pandas(
+        columns=["run_uuid"],
+        partitions=[("delivery_date", "=", data_interval_start.strftime("%Y%m%d"))],
+    )
     distinct_run_uuids = run_uuid_df["run_uuid"].unique().tolist()
 
+    input_dt = DeltaTable("data/pipeline_artifacts/cleaning_pipeline/clean_and_reshape")
     # interpolate and write data to delta table for each run_uuid
     for run_uuid in distinct_run_uuids:
-        partition_df = input_dt.to_pandas(partitions=[("run_uuid", "=", run_uuid)])
-        partition_df["time_stamp"] = pd.DatetimeIndex(partition_df.time).asi8
-        partition_df = partition_df.set_index("time_stamp")
+        run_df = input_dt.to_pandas(partitions=[("run_uuid", "=", run_uuid)])
 
-        # interpolate missing values using time_stamp
-        partition_df = partition_df.interpolate(
+        run_df["time_stamp"] = pd.DatetimeIndex(run_df.time).asi8
+        run_df = run_df.set_index("time_stamp")
+
+        # interpolate missing values scaled in reference to time_stamp
+        run_df = run_df.interpolate(
             method="index", limit_direction="forward", axis="index"
         )
 
         # fill missing values at the beginning and end of the partition where interpolation is not possible
-        partition_df = partition_df.ffill()
-        partition_df = partition_df.bfill()
+        run_df = run_df.ffill()
+        run_df = run_df.bfill()
 
+        print(run_df.info())
         # write output data to delta table
         write_deltalake(
             "data/pipeline_artifacts/cleaning_pipeline/interpolate_sensor_data",
-            partition_df,
+            run_df,
             mode="overwrite",
             partition_filters=[("run_uuid", "=", run_uuid)],
         )

@@ -1,3 +1,4 @@
+import datetime
 from typing import List
 from airflow.models.dag import DAG
 from airflow.decorators import task
@@ -14,6 +15,9 @@ from features_pipeline.features.axis_differentiation_by_time import (
 with DAG(
     "features_pipeline",
     description="Compute features on cleaned sensor data.",
+    schedule=datetime.timedelta(days=1),
+    start_date=datetime.datetime(2022, 11, 23),
+    end_date=datetime.datetime(2022, 11, 23),
 ) as dag:
 
     # Create the features we would like to generate and spcify how to compute it
@@ -40,41 +44,43 @@ with DAG(
         EuclideanNorm("a2", ["ax_2", "ay_2", "az_2"]),
         EuclideanNorm("f1", ["fx_1", "fy_1", "fz_1"]),
         EuclideanNorm("f2", ["fx_2", "fy_2", "fz_2"]),
+        AxisDifferentiationByTime("dx_1", "x_1"),
+        AxisDifferentiationByTime("dy_1", "y_1"),
+        AxisDifferentiationByTime("dz_1", "z_1"),
+        AxisDifferentiationByTime("dx_2", "x_2"),
+        AxisDifferentiationByTime("dy_2", "y_2"),
+        AxisDifferentiationByTime("dz_2", "z_2"),
+        EuclideanNorm("d1", ["dx_1", "dy_1", "dz_1"]),
+        EuclideanNorm("d2", ["dx_2", "dy_2", "dz_2"]),
     ]
     # TODO: need to add distance features
-    features_map = {feature.get_feature_column_name(): feature for feature in features}
 
     # translate the features we would like to generate into tasks
-    generate_feature_tasks = {
+    features_map = {feature.get_feature_column_name(): feature for feature in features}
+    feature_tasks_map = {
         feature.get_feature_column_name(): generate_feature.override(
             task_id=f"generate_{feature.get_feature_column_name()}"
-        )(
-            "data/pipeline_artifacts/cleaning_pipeline/interpolate_sensor_data",
-            feature,
-            features_map,
-        )
+        )(feature, features_map)
         for feature in features
     }
 
     # make sure the feature name don't have any duplicates causing feature to get dropped
-    assert len(generate_feature_tasks) == len(
+    assert len(feature_tasks_map) == len(
         features
     ), "Duplicate feature names are not allowed"
 
     # setup task dependencies between each feature
     for feature in features:
-        generate_feature_tasks[feature.get_feature_column_name()] << [
-            generate_feature_tasks[dependent_feature_name]
+        feature_tasks_map[feature.get_feature_column_name()] << [
+            feature_tasks_map[dependent_feature_name]
             for dependent_feature_name in feature.get_dependent_columns()
-            if dependent_feature_name in generate_feature_tasks
+            if dependent_feature_name in feature_tasks_map
         ]
 
     # create task to combine all individual feature columns into one table
-    combine_features_task = combine_features(
-        "data/pipeline_artifacts/cleaning_pipeline/interpolate_sensor_data", features
-    )
+    combine_features_task = combine_features(features)
 
     # combine task depends on all feature task completions
     combine_features_task << [
-        feature_task for feature_task in generate_feature_tasks.values()
+        feature_task for feature_task in feature_tasks_map.values()
     ]
