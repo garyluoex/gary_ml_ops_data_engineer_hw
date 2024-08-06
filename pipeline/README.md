@@ -58,8 +58,8 @@ data/pipeline_artifacts/preprocess_pipeline/pivoted_data         # table pivoted
 data/pipeline_artifacts/preprocess_pipeline/interpolated_data    # table with sensor misalign gaps filled using interpolation
 
 # Final Tables
-data/pipeline_artifacts/preprocess_pipeline/combined_data        # complete data with all features
-data/pipeline_artifacts/preprocess_pipeline/statistics_data      # table with statistics on each run
+data/pipeline_artifacts/features_pipeline/combined_data        # complete data with all features
+data/pipeline_artifacts/summary_pipeline/statistics_data      # table with statistics on each run
 ```
 
 14. To query the deltalake tables shown above, I recommend installing [DuckDB CLI](https://duckdb.org/docs/installation)
